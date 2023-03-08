@@ -17,7 +17,6 @@ class MainForm(QMainWindow, Ui_Qdesk):
         self.desktop.show()
 
 
-
 # 主程序
 if __name__ == "__main__":
     app = QApplication(sys.argv)

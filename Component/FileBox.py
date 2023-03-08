@@ -1,46 +1,82 @@
 # -*- coding: utf-8 -*-
+import os
+
 import configure
 from PyQt5 import Qt, QtGui, QtCore
-from PyQt5.QtCore import QSize, QRect, Qt as Qtcore, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QSize, QRect, Qt as Qtcore, pyqtSlot, pyqtSignal, QRegExp
 from PyQt5.QtWidgets import QWidget \
     , QSizePolicy \
     , QPushButton \
     , QGroupBox \
     , QVBoxLayout \
-    , QTextEdit, QLabel
-
+    , QPlainTextEdit, QLabel, QPlainTextEdit, QApplication
 
 # 重置盒子为默认样式
-def clearBoxStyle(box):
-    box.setStyleSheet("background-color:transparent;")
+from common.Desktop_utils import fileReName, get_desktopFiles
+
+
+def clearChooseBox(boxWidget):
+    boxWidget.setStyleSheet("background-color:transparent;")
+    # 是否编辑状态
+    if boxWidget.isEdit:
+        closeFileNameEdit(boxWidget)
+
+
+# 设置焦点
+def addFocus(widget):
+    if widget.hasFocus():
+        return
+    else:
+        widget.setFocus()
 
 
 # 选中文件后添加样式
-def chooseBoxStyle(box):
-    box.setStyleSheet("#" + box.seatName + "{background-color:rgba(192,192,192,0.3);"
-                                           "border:1px solid rgba(255,255,255,0.3);}")
+def chooseBoxStyle(boxWidget):
+    boxWidget.setStyleSheet("#" + boxWidget.seatName + "{background-color:rgba(0,0,200,0.2);"
+                                                       "border:1px solid rgba(255,255,255,0.3);}")
 
 
 # 文件名修改
-def openFileNameEdit(box):
-    box.isEdit = True
-    textEdit = box.findChild(QTextEdit)
+def openFileNameEdit(boxWidget):
+    boxWidget.isEdit = True
+    textEdit = boxWidget.findChild(QPlainTextEdit)
     # 显示编辑框
     textEdit.setHidden(False)
+    textEdit.textCursor()
+
     # 隐藏Qlabel
-    label = box.findChild(QLabel)
+    label = boxWidget.findChild(QLabel)
     label.setHidden(True)
 
 
 # 关闭修改文本框
-def closeFileNameEdit(box):
-    textEdit = box.findChild(QTextEdit)
-    # 显示编辑框
-    textEdit.setHidden(True)
-    # 隐藏Qlabel
-    label = box.findChild(QLabel)
-    label.setHidden(False)
-    box.isEdit = False
+def closeFileNameEdit(boxWidget):
+    if boxWidget.inherits("FileBox"):
+        if boxWidget.isEdit:
+            textEdit = boxWidget.findChild(QPlainTextEdit)
+            # 显示编辑框
+            textEdit.setHidden(True)
+            # 隐藏Qlabel
+            label = boxWidget.findChild(QLabel)
+            label.setHidden(False)
+            boxWidget.isEdit = False
+            # 改名
+            name = textEdit.toPlainText()
+            newFilePath = fileReName(boxWidget.filePath, name)
+            configure.DESKTOP_FILES = get_desktopFiles()
+            # 更新FileBox的数据
+            if os.path.exists(newFilePath):
+                # 获取文件图片和名称
+                fileInfo = Qt.QFileInfo(newFilePath)
+                fileIcon = Qt.QFileIconProvider()
+                boxWidget.filePath = newFilePath
+                boxWidget.fileIcon = QtGui.QIcon(fileIcon.icon(fileInfo))
+                boxWidget.fileName = QtCore.QFileInfo(newFilePath).fileName()
+                label.setText(name)
+                icon = boxWidget.findChild(QPushButton)
+                icon.setIcon(boxWidget.fileIcon)
+                return
+            textEdit.setPlainText(newFilePath)
 
 
 # 选中的文件
@@ -61,12 +97,11 @@ class GroupBoxQ(QGroupBox):
 class FileBox(QWidget):
     def __init__(self, filePath, seatName):
         super(FileBox, self).__init__()
-        self.fileName = "fileName"
-        self.fileIcon = "fileIcon"
+        self.fileName = "Name"
+        self.fileIcon = "Icon"
         self.filePath = filePath
         self.seatName = seatName
         self.isEdit = False  # 是否编辑
-
         # 获取文件图片和名称
         fileInfo = Qt.QFileInfo(self.filePath)
         fileIcon = Qt.QFileIconProvider()
@@ -93,30 +128,30 @@ class FileBox(QWidget):
         # boxQvLayout.setStretch(0, 6)
         # boxQvLayout.setStretch(1, 4)
         self.verticalLayout.addWidget(box)
-        # 连接桌面信号，处理
-        # box.connect(self.editFileName)
+        # 连接文本修改控件
+        textEdit = box.findChild(QPlainTextEdit, None)
+        # textEdit.textChanged.connect(lambda: self.fileNameChange(QPlainTextEdit, 20))
+
+    # 文件名修改
+    def fileNameChange(self, textEdit, max_length):
+        pass
 
     # 鼠标悬浮
     def enterEvent(self, e):
         if self.objectName() not in chooseFiles:
-            self.setStyleSheet("#" + self.seatName + "{background-color:rgba(255,255,255,0.1);"
-                                                     "border-radius:4px;"
+            self.setStyleSheet("#" + self.seatName + "{background-color:rgba(0,0,200,0.1);"
                                                      "border:1px solid rgba(255,255,255,0.3);}")
 
     # 鼠标离开
     def leaveEvent(self, e):
         if self.objectName() not in chooseFiles:
-            clearBoxStyle(self)
+            clearChooseBox(self)
 
     def mousePressEvent(self, e):
         # 左键按下
         if e.buttons() == QtCore.Qt.LeftButton:
-            # if not self.hasFocus():
-            #     self.setFocus()
-            #     print(222)
-            # else:
-            #     print(111)
-            #     return
+            # 设置焦点
+            addFocus(self)
             # 没有选中，直接添加
             if len(chooseFiles) == 0:
                 # 添加文件至选择列表
@@ -128,9 +163,9 @@ class FileBox(QWidget):
                 return
             else:  # 除新选择文件外，去掉所有文件样式
                 desktopWindow = self.parent().parent()
-                boxs = desktopWindow.findChildren(FileBox)
-                for box in boxs:
-                    clearBoxStyle(box)
+                boxWidgets = desktopWindow.findChildren(FileBox)
+                for widget in boxWidgets:
+                    clearChooseBox(widget)
                 # 清楚选择列表
                 chooseFiles.clear()
                 # 添加文件至选择列表
@@ -143,18 +178,22 @@ class FileBox(QWidget):
             print("单击鼠标中键")  # 响应测试语句
 
     def keyPressEvent(self, e):
-        if e.key() == Qtcore.Key_F2:  # 判断是否按下了F2键
-            box = self.focusWidget()
+        # 判断是否按下了F2键
+        if e.key() == Qtcore.Key_F2:
+            # 当前焦点控件
+            currentWidget = self.focusWidget()
+            # 有选中文件并且焦点控件是FileBox
             if len(chooseFiles) != 0:
-                if box.isEdit is False:
-                    openFileNameEdit(box)
+                if currentWidget.isEdit is False:
+                    openFileNameEdit(currentWidget)
+        # 判断是否按下了回车键
+        if e.key() == Qtcore.Key_Return:
+            print(e)
 
+    # 盒子失去焦点事件
     def focusOutEvent(self, e):
-        box = self.focusWidget()
-        closeFileNameEdit(box)
-
-    def editFileName(result=None):
-        print(result)
+        boxWidget = self.focusWidget()
+        closeFileNameEdit(boxWidget)
 
     # 上半部分
     def topSectionInit(self):
@@ -188,13 +227,10 @@ class FileBox(QWidget):
         size = downSection.size()
         fileText.setGeometry(0, 0, size.width(), size.height())
         # 文件名称编辑框
-        fileEdit = QTextEdit(downSection)
+        fileEdit = QPlainTextEdit(downSection)
         fileEdit.setHidden(True)
         # fileEdit.lineWrapMode(Qt.FixedPixelWidth)
         fileEdit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         fileEdit.setVerticalScrollBarPolicy(Qtcore.ScrollBarAlwaysOff)
-        fileEdit.setMarkdown(self.fileName)
-        # fileEdit.setStyleSheet(
-        #     "background-color:transparent;"
-        # )
+        fileEdit.setPlainText(self.fileName)
         return downSection

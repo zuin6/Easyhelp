@@ -5,37 +5,6 @@ from PyQt5.QtWidgets import QApplication
 from win32comext.shell import shell, shellcon
 
 
-# 获取桌面路径
-def get_desktopPath():
-    return shell.SHGetPathFromIDList(shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_DESKTOP)).decode('utf-8')
-
-
-# 获取屏幕可用尺寸
-def get_ScreenAvailableSize():
-    return QApplication.desktop().availableGeometry()
-
-
-# 获取桌面所有文件名称
-def get_desktopFiles():
-    names = os.listdir(get_desktopPath())
-    # 如果有桌面配置文件去除
-    if "desktop.ini" in names:
-        names.remove("desktop.ini")
-    return names
-
-
-# 获取桌面所有文件路径
-def get_desktopFilesPath(files):
-    # 桌面路径
-    path = get_desktopPath()
-    pathList = [0 for i in range(24*12)]
-    index = 0
-    for file in files:
-        pathList[index] = os.path.join(path, file)
-        index = index + 1
-    return pathList
-
-
 # 获取句柄标题
 def get_hWndtitle(hwnd):
     title = win32gui.GetWindowText(hwnd)
@@ -105,30 +74,21 @@ def set_Z_IndexOnDesktop():
 def 移动桌面助手窗口():
     hWnd = win32gui.FindWindowEx(0, 0, "WorkerW", None)
     hWnds = []
+    a = None
     while len(hWnds) == 0:
         win32gui.EnumChildWindows(hWnd, lambda hWnd, param: param.append(hWnd), hWnds)
         hWnd = win32gui.FindWindowEx(0, hWnd, "WorkerW", None)
     for hWnd in hWnds:
         className = win32gui.GetClassName(hWnd)
         if className == "TXMiniSkin":
-            win32gui.MoveWindow(hWnd, 50, 50, 1200, 1200, True)
-
+        # if className == "_cls_desk_":
+            win32gui.MoveWindow(hWnd, 100, 100, 1200, 1200, True)
+            a = hWnd
+    while True:
+        win32gui.MoveWindow(a,400,400,1200,1200,True)
 
 def main():
-    # print(get_desktopFilesPath(get_desktopFiles()))
-    # get_desktopFiles()
-    # files = get_desktopFiles()
-    # deskPath = get_desktopPath()
-    index = 1
-
-    # for name in files:
-    #     path = os.path.join(deskPath, name)
-    #     print(path)
-    #     index = index + 1
-    # print(index)
-    # for filepath in filenames:
-    # fileInfo = Qt.QFileInfo(os.path.join(dirpath, filepath))
-    # print(fileInfo)
+    移动桌面助手窗口()
 
 
-main()
+# main()

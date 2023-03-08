@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
+from common.Desktop_utils import get_desktopFiles
+
+
 class desktopVal:
     # 选择的文件
     global DESKTOP_CHOOSE_FILES
+    # 桌面所有文件名称
+    global DESKTOP_FILES
+    DESKTOP_FILES = get_desktopFiles()
     DESKTOP_CHOOSE_FILES = []
 
 

@@ -1,25 +1,43 @@
 # 根据屏幕大小计算表格列数量
 import os
-
+import time
 import win32api
 import win32con
 import win32gui
 from PyQt5.QtWidgets import QApplication
 from win32comext.shell import shell, shellcon
 
+
+# 根据屏幕大小计算表格行数量
 def getTableRowSize(windowWidth):
     iconWidth = 80
     row = windowWidth / iconWidth
     return row
 
 
-# 根据屏幕大小计算表格行数量
+# 根据屏幕大小计算表格列数量
 def getTableColSize(windowHeight):
     iconHeight = 90
     col = windowHeight / iconHeight
     return col
 
 
+# 桌面文件重命名
+def fileReName(oldPath, newName):
+    # 不是文件就是文件夹
+    path, filename = os.path.split(oldPath)
+    # 判断名字是否一样,相同的直接跳出
+    if filename == newName or len(newName) == 0:
+        return filename
+    # 修改后的路径
+    newFilePath = os.path.join(path,newName)
+    if os.path.isfile(oldPath):
+        # 文件重命名
+        os.rename(oldPath,newFilePath)
+    else:
+        # 文件夹重命名
+        os.rename(oldPath,os.path.join(path,newFilePath))
+    return newFilePath
 
 
 # 获取桌面路径
@@ -45,12 +63,13 @@ def get_desktopFiles():
 def get_desktopFilesPath(files):
     # 桌面路径
     path = get_desktopPath()
-    pathList = [0 for i in range(24*12)]
+    pathList = [0 for i in range(24 * 12)]
     index = 0
     for file in files:
         pathList[index] = os.path.join(path, file)
         index = index + 1
     return pathList
+
 
 # 获取桌面壁纸路径
 def get_DesktopWallPaperPath():
@@ -60,6 +79,7 @@ def get_DesktopWallPaperPath():
     # 关闭键
     win32api.RegCloseKey(key)
     return value
+
 
 # 设置桌面壁纸
 def setWallpaper(path):
@@ -71,4 +91,3 @@ def setWallpaper(path):
 
     # SPIF_SENDWININICHANGE:立即生效
     win32gui.SystemParametersInfo(win32con.SPI_SETDESKWALLPAPER, path, win32con.SPIF_SENDWININICHANGE)
-
